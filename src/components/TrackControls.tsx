@@ -1,16 +1,14 @@
 import { usePlayer } from "~/lib/player-context";
 
 export function TrackControls() {
-  const { current, prev, next, toggle, isPlaying, volume, setVolume } =
+  const { prev, next, toggle, isPlaying, volume, setVolume, scrubDirection } =
     usePlayer();
 
   return (
     <div className="mt-6 flex flex-col items-center gap-4">
-      <p className="max-w-[80vw] truncate text-center text-xs uppercase tracking-[0.3em] text-bone/80 md:text-sm md:tracking-[0.35em]">
-        {current.title}
-      </p>
+      <div className="relative flex items-center gap-5">
+        <ScrubGlyph side="left" active={scrubDirection === "rewind"} />
 
-      <div className="flex items-center gap-5">
         <button
           type="button"
           onClick={prev}
@@ -62,10 +60,37 @@ export function TrackControls() {
             <path d="M16 5h2v14h-2zM5.5 4.5v15L16 12z" />
           </svg>
         </button>
+
+        <ScrubGlyph side="right" active={scrubDirection === "ffwd"} />
       </div>
 
       <VolumeSlider volume={volume} setVolume={setVolume} />
     </div>
+  );
+}
+
+function ScrubGlyph({
+  side,
+  active,
+}: {
+  side: "left" | "right";
+  active: boolean;
+}) {
+  return (
+    <span
+      aria-hidden
+      className={`pointer-events-none absolute top-1/2 flex h-8 w-8 -translate-y-1/2 items-center justify-center text-accent transition-all duration-150 ${
+        side === "left" ? "right-full mr-3" : "left-full ml-3"
+      } ${active ? "translate-x-0 opacity-100" : side === "left" ? "translate-x-2 opacity-0" : "-translate-x-2 opacity-0"}`}
+    >
+      <svg className="h-6 w-6" viewBox="0 0 24 24" fill="currentColor">
+        {side === "left" ? (
+          <path d="M11 18V6l-8.5 6 8.5 6zm.5-6l8.5 6V6l-8.5 6z" />
+        ) : (
+          <path d="M4 18l8.5-6L4 6v12zm9 0l8.5-6L13 6v12z" />
+        )}
+      </svg>
+    </span>
   );
 }
 

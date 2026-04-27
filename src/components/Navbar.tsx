@@ -2,7 +2,7 @@ import { Link } from "@tanstack/react-router";
 import { usePlayer } from "~/lib/player-context";
 
 export function Navbar() {
-  const { toggleCatalog, catalogOpen } = usePlayer();
+  const { toggleCatalog, catalogOpen, current } = usePlayer();
 
   return (
     <header
@@ -18,14 +18,16 @@ export function Navbar() {
         aria-hidden
         className="pointer-events-none absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-white/30 to-transparent"
       />
-      <nav className="mx-auto grid h-16 max-w-6xl grid-cols-[1fr_auto_1fr] items-center px-4 md:px-6">
-        <div />
+      <nav className="mx-auto grid h-16 max-w-6xl grid-cols-[1fr_auto_1fr] items-center gap-3 px-4 md:px-6">
         <Link
           to="/"
-          className="justify-self-center font-display text-xs uppercase tracking-[0.3em] text-bone hover:text-accent md:text-sm md:tracking-[0.4em]"
+          className="justify-self-start font-display text-xs uppercase tracking-[0.3em] text-bone hover:text-accent md:text-sm md:tracking-[0.4em]"
         >
           Jadsynth
         </Link>
+        <p className="max-w-[40vw] truncate text-center text-[0.65rem] uppercase tracking-[0.25em] text-bone/80 md:text-xs md:tracking-[0.3em]">
+          {current.title}
+        </p>
         <button
           onClick={toggleCatalog}
           aria-expanded={catalogOpen}

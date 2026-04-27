@@ -11,6 +11,9 @@ import {
 import { Howl } from "howler";
 import { tracks as allTracks, type Track } from "./tracks";
 import { shuffleTracksArtFirst } from "./shuffle-tracks";
+import { freeBuffersExcept, prepareTrack } from "./scrub-engine";
+
+export type ScrubDirection = "none" | "ffwd" | "rewind";
 
 type PlayerState = {
   currentIndex: number;
@@ -20,6 +23,8 @@ type PlayerState = {
   current: Track;
   tracks: Track[];
   catalogOpen: boolean;
+  scrubDirection: ScrubDirection;
+  setScrubDirection: (d: ScrubDirection) => void;
   howlRef: React.MutableRefObject<Howl | null>;
   rateLockRef: React.MutableRefObject<boolean>;
   setIndex: (i: number) => void;
@@ -48,11 +53,22 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
     return Math.max(0, Math.min(1, parsed));
   });
   const [catalogOpen, setCatalogOpen] = useState(false);
+  const [scrubDirection, setScrubDirection] = useState<ScrubDirection>("none");
   const [tracks, setTracks] = useState<Track[]>(allTracks);
 
   useEffect(() => {
     setTracks(shuffleTracksArtFirst());
   }, []);
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const isMobile = window.matchMedia("(max-width: 767px)").matches;
+    if (isMobile) return;
+    const src = tracks[currentIndex]?.src;
+    if (!src) return;
+    prepareTrack(src).catch(() => {});
+    freeBuffersExcept([src]);
+  }, [currentIndex, tracks]);
 
   const howlRef = useRef<Howl | null>(null);
   const soundIdRef = useRef<number | null>(null);
@@ -254,6 +270,8 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
       current: tracks[currentIndex],
       tracks,
       catalogOpen,
+      scrubDirection,
+      setScrubDirection,
       howlRef,
       rateLockRef,
       setIndex,
@@ -273,6 +291,7 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
       volume,
       tracks,
       catalogOpen,
+      scrubDirection,
       setIndex,
       next,
       prev,

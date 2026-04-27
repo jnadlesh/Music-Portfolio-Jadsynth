@@ -4,10 +4,15 @@ import {
   useMotionValue,
   useTransform,
   animate,
-  type MotionValue,
 } from "motion/react";
 import { usePlayer } from "~/lib/player-context";
 import { useIsMobile } from "~/lib/use-media-query";
+import {
+  endScrub,
+  isScrubReady,
+  startScrub,
+  updateScrub,
+} from "~/lib/scrub-engine";
 import { TrackTimer } from "./TrackTimer";
 
 const BASE_RPM = 20;
@@ -22,6 +27,7 @@ export function Vinyl() {
     isPlaying,
     rateLockRef,
     howlRef,
+    setScrubDirection,
   } = usePlayer();
   const isMobile = useIsMobile();
   const rotation = useMotionValue(0);
@@ -93,16 +99,25 @@ export function Vinyl() {
 
   const onPointerDown = (e: React.PointerEvent) => {
     if (isMobile) return;
+    if (!isScrubReady(current.src)) return;
     const el = containerRef.current;
     if (!el) return;
-    el.setPointerCapture(e.pointerId);
-    rateLockRef.current = true;
 
     const h = howlRef.current;
     const wasPlaying = !!h && h.playing();
-    if (h) {
-      h.rate(0.0001);
+    const seek = h ? h.seek() : 0;
+    const initialPos = typeof seek === "number" ? seek : 0;
+
+    if (h) h.pause();
+
+    const ok = startScrub(current.src, initialPos, wasPlaying);
+    if (!ok) {
+      if (h && wasPlaying) h.play();
+      return;
     }
+
+    el.setPointerCapture(e.pointerId);
+    rateLockRef.current = true;
 
     const rect = el.getBoundingClientRect();
     const cx = rect.left + rect.width / 2;
@@ -130,21 +145,21 @@ export function Vinyl() {
 
     rotation.set(rotation.get() + delta);
 
-    const h = howlRef.current;
-    if (h) {
-      const seek = h.seek();
-      const currentSeek = typeof seek === "number" ? seek : 0;
-      const timeDelta = (delta / 360) * SCRUB_SECONDS_PER_360;
-      const duration = h.duration() || 0;
-      const newSeek = Math.max(
-        0,
-        Math.min(duration > 0 ? duration - 0.01 : 1e9, currentSeek + timeDelta),
-      );
-      h.seek(newSeek);
+    const now = performance.now();
+    const dt = Math.max(0.001, (now - dragRef.current.lastTime) / 1000);
+    const degPerSec = delta / dt;
+    const SCRUB_THRESHOLD_DPS = BASE_RPM * 6 * 1.4;
+    if (Math.abs(degPerSec) > SCRUB_THRESHOLD_DPS) {
+      setScrubDirection(degPerSec > 0 ? "ffwd" : "rewind");
+    } else {
+      setScrubDirection("none");
     }
 
+    const audioVelocity = (degPerSec / 360) * SCRUB_SECONDS_PER_360;
+    updateScrub(audioVelocity);
+
     dragRef.current.lastAngle = angle;
-    dragRef.current.lastTime = performance.now();
+    dragRef.current.lastTime = now;
   };
 
   const onPointerUp = (e: React.PointerEvent) => {
@@ -152,13 +167,21 @@ export function Vinyl() {
     const el = containerRef.current;
     el?.releasePointerCapture(e.pointerId);
 
+    const finalPos = endScrub();
+
     const h = howlRef.current;
-    if (h) {
-      h.rate(1);
+    if (h && finalPos !== null) {
+      h.seek(finalPos);
       setRate(1);
       speed.set(dragRef.current.wasPlaying ? 1 : 0);
+      if (dragRef.current.wasPlaying) {
+        h.play();
+      } else {
+        h.pause();
+      }
     }
 
+    setScrubDirection("none");
     rateLockRef.current = false;
     dragRef.current.active = false;
   };
@@ -220,7 +243,6 @@ export function Vinyl() {
       </motion.div>
 
       <TrackTimer />
-      <SpeedReadout speed={speed} />
     </div>
   );
 }
@@ -327,11 +349,3 @@ function RecordLabel({
   );
 }
 
-function SpeedReadout({ speed }: { speed: MotionValue<number> }) {
-  const display = useTransform(speed, (s) => `${s.toFixed(2)}×`);
-  return (
-    <div className="mt-8 font-mono text-xs uppercase tracking-[0.3em] text-bone/50">
-      <motion.span>{display}</motion.span>
-    </div>
-  );
-}
