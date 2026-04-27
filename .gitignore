@@ -1,0 +1,15 @@
+node_modules
+.output
+.vinxi
+.nitro
+dist
+.env
+.env.local
+*.log
+.DS_Store
+
+# Generated route tree
+src/routeTree.gen.ts
+
+# Source wavs — convert to mp3 before deploying (run `npm run convert-audio`)
+public/audio/*.wav

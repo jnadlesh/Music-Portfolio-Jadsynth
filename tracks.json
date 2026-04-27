@@ -1,0 +1,89 @@
+{
+  "$schema": "Source of truth for the catalog. Run `npm run sync-tracks` after editing.",
+  "$help": "Minimum per track: audioFile. With soundcloudUrl, title/artist/artwork auto-fetch via oEmbed. Without it, set `title` and optionally `album`. Mood auto-derives from artwork if not set.",
+  "tracks": [
+    {
+      "soundcloudUrl": "https://soundcloud.com/jadsynth/frozen",
+      "audioFile": "/audio/frozen.mp3"
+    },
+    {
+      "soundcloudUrl": "https://soundcloud.com/jadsynth/only-in-time",
+      "audioFile": "/audio/only-in-time.mp3"
+    },
+    {
+      "soundcloudUrl": "https://soundcloud.com/jadsynth/in-an-instant",
+      "audioFile": "/audio/in-an-instant.mp3"
+    },
+    {
+      "soundcloudUrl": "https://soundcloud.com/jadsynth/revolve",
+      "audioFile": "/audio/revolve.mp3"
+    },
+    {
+      "soundcloudUrl": "https://soundcloud.com/jadsynth/the-end",
+      "audioFile": "/audio/the-end.mp3"
+    },
+    {
+      "soundcloudUrl": "https://soundcloud.com/jadsynth/past",
+      "audioFile": "/audio/past.mp3"
+    },
+    {
+      "soundcloudUrl": "https://soundcloud.com/jadsynth/wandering-moog",
+      "audioFile": "/audio/wandering-moog.mp3"
+    },
+    {
+      "soundcloudUrl": "https://soundcloud.com/jadsynth/wave",
+      "audioFile": "/audio/waves.mp3"
+    },
+    {
+      "soundcloudUrl": "https://soundcloud.com/jadsynth/froggy",
+      "audioFile": "/audio/froggy.mp3"
+    },
+    {
+      "soundcloudUrl": "https://soundcloud.com/jadsynth/yellow-interbloo",
+      "audioFile": "/audio/interbloo.mp3"
+    },
+    {
+      "soundcloudUrl": "https://soundcloud.com/jadsynth/nightrider-wip",
+      "audioFile": "/audio/nightrider.mp3"
+    },
+    {
+      "soundcloudUrl": "https://soundcloud.com/jadsynth/level-one",
+      "audioFile": "/audio/dimensional-drift.mp3"
+    },
+    {
+      "soundcloudUrl": "https://soundcloud.com/jadsynth/streamline",
+      "audioFile": "/audio/streamline.mp3"
+    },
+    {
+      "soundcloudUrl": "https://soundcloud.com/jadsynth/timeless",
+      "audioFile": "/audio/timeless.mp3"
+    },
+    {
+      "soundcloudUrl": "https://soundcloud.com/jadsynth/rend",
+      "audioFile": "/audio/rend.mp3"
+    },
+    {
+      "soundcloudUrl": "https://soundcloud.com/jadsynth/sender",
+      "audioFile": "/audio/sender.mp3"
+    },
+    {
+      "soundcloudUrl": "https://soundcloud.com/jadsynth/genesis",
+      "audioFile": "/audio/genesis.mp3"
+    },
+    {
+      "title": "Dream",
+      "album": "J.A.D",
+      "audioFile": "/audio/dream.mp3"
+    },
+    {
+      "title": "Jungle",
+      "album": "J.A.D",
+      "audioFile": "/audio/Jungle.mp3"
+    },
+    {
+      "title": "Lofi",
+      "album": "J.A.D",
+      "audioFile": "/audio/Lofi.mp3"
+    }
+  ]
+}

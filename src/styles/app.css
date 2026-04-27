@@ -1,0 +1,28 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  html {
+    @apply bg-ink text-bone font-display antialiased;
+    overscroll-behavior: none;
+  }
+
+  body {
+    @apply min-h-screen;
+    background-color: transparent;
+  }
+}
+
+@layer components {
+  .vinyl-grooves {
+    background:
+      repeating-radial-gradient(
+        circle at center,
+        rgba(255, 255, 255, 0.03) 0px,
+        rgba(255, 255, 255, 0.03) 1px,
+        transparent 1px,
+        transparent 3px
+      );
+  }
+}

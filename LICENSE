@@ -1,0 +1,60 @@
+Copyright (c) 2026 Jonathan Adlesh (JADSYNTH). All rights reserved.
+
+This repository contains two distinct kinds of material, each governed
+by the terms below.
+
+================================================================================
+1. MUSICAL WORKS, RECORDINGS, AND ARTWORK
+================================================================================
+
+All audio files (including but not limited to files in `public/audio/`),
+all cover art and visual artwork (including but not limited to files in
+`public/covers/`), all underlying compositions, sound recordings, lyrics,
+performances, mixes, masters, and any derivative works thereof
+(collectively, the "Works") are the exclusive property of Jonathan Adlesh
+(JADSYNTH).
+
+NO LICENSE IS GRANTED TO THE WORKS. Without prior written permission from
+the copyright holder, you may NOT:
+
+  - Copy, download, redistribute, mirror, or rehost the Works in whole
+    or in part.
+  - Sample, remix, edit, modify, transcribe, or create derivative works
+    from the Works.
+  - Use the Works (or any portion of them) in any project, product,
+    video, livestream, podcast, advertisement, AI training dataset,
+    machine-learning model, soundboard, application, game, performance,
+    or other creative or commercial work.
+  - Use the Works for commercial purposes of any kind.
+  - Use the Works for non-commercial purposes other than personal,
+    private listening as streamed from this website.
+
+Streaming the Works through this website (jadsynth.com) for personal
+listening is the only permitted use.
+
+For licensing inquiries, contact the copyright holder.
+
+================================================================================
+2. SOURCE CODE
+================================================================================
+
+All source code in this repository (including but not limited to TypeScript,
+JavaScript, CSS, HTML, configuration, and build scripts) is also Copyright
+(c) 2026 Jonathan Adlesh.
+
+The source code is published publicly for transparency and reference only.
+No license is granted to copy, modify, redistribute, sublicense, or use
+the source code in any other project without prior written permission from
+the copyright holder. Forking on GitHub for the purpose of viewing the
+code is permitted; redistribution or reuse is not.
+
+================================================================================
+3. NO WARRANTY
+================================================================================
+
+THE REPOSITORY AND ITS CONTENTS ARE PROVIDED "AS IS", WITHOUT WARRANTY
+OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE
+WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE, AND
+NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR ANY CLAIM,
+DAMAGES, OR OTHER LIABILITY ARISING FROM, OUT OF, OR IN CONNECTION WITH
+THE REPOSITORY OR ITS USE.

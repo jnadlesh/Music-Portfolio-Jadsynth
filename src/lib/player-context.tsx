@@ -1,0 +1,297 @@
+import {
+  createContext,
+  useCallback,
+  useContext,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+  type ReactNode,
+} from "react";
+import { Howl } from "howler";
+import { tracks as allTracks, type Track } from "./tracks";
+import { shuffleTracksArtFirst } from "./shuffle-tracks";
+
+type PlayerState = {
+  currentIndex: number;
+  isPlaying: boolean;
+  rate: number;
+  volume: number;
+  current: Track;
+  tracks: Track[];
+  catalogOpen: boolean;
+  howlRef: React.MutableRefObject<Howl | null>;
+  rateLockRef: React.MutableRefObject<boolean>;
+  setIndex: (i: number) => void;
+  next: () => void;
+  prev: () => void;
+  toggle: () => void;
+  setRate: (r: number) => void;
+  setVolume: (v: number) => void;
+  openCatalog: () => void;
+  closeCatalog: () => void;
+  toggleCatalog: () => void;
+};
+
+const PlayerContext = createContext<PlayerState | null>(null);
+
+export function PlayerProvider({ children }: { children: ReactNode }) {
+  const [currentIndex, setCurrentIndex] = useState(0);
+  const [isPlaying, setIsPlaying] = useState(false);
+  const [rate, setRateState] = useState(1);
+  const [volume, setVolumeState] = useState(() => {
+    if (typeof window === "undefined") return 0.8;
+    const stored = window.localStorage.getItem("jadsynth.volume");
+    if (stored === null) return 0.8;
+    const parsed = parseFloat(stored);
+    if (!Number.isFinite(parsed)) return 0.8;
+    return Math.max(0, Math.min(1, parsed));
+  });
+  const [catalogOpen, setCatalogOpen] = useState(false);
+  const [tracks, setTracks] = useState<Track[]>(allTracks);
+
+  useEffect(() => {
+    setTracks(shuffleTracksArtFirst());
+  }, []);
+
+  const howlRef = useRef<Howl | null>(null);
+  const soundIdRef = useRef<number | null>(null);
+  const rateLockRef = useRef(false);
+  const rafRef = useRef<number | null>(null);
+  const volumeRef = useRef(volume);
+  const crossfadeRafRef = useRef<number | null>(null);
+  const crossfadePrevRef = useRef<Howl | null>(null);
+
+  useEffect(() => {
+    volumeRef.current = volume;
+    if (typeof window === "undefined") return;
+    try {
+      window.localStorage.setItem("jadsynth.volume", String(volume));
+    } catch {
+      /* storage unavailable / quota — ignore */
+    }
+  }, [volume]);
+
+  useEffect(() => {
+    return () => {
+      if (rafRef.current !== null) cancelAnimationFrame(rafRef.current);
+      if (crossfadeRafRef.current !== null)
+        cancelAnimationFrame(crossfadeRafRef.current);
+      crossfadePrevRef.current?.unload();
+      howlRef.current?.unload();
+    };
+  }, []);
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+
+    if (rafRef.current !== null) {
+      cancelAnimationFrame(rafRef.current);
+      rafRef.current = null;
+    }
+    rateLockRef.current = false;
+
+    if (crossfadeRafRef.current !== null) {
+      cancelAnimationFrame(crossfadeRafRef.current);
+      crossfadeRafRef.current = null;
+    }
+    if (crossfadePrevRef.current) {
+      crossfadePrevRef.current.unload();
+      crossfadePrevRef.current = null;
+    }
+
+    const prev = howlRef.current;
+    const prevId = soundIdRef.current;
+
+    const sound = new Howl({
+      src: [tracks[currentIndex].src],
+      html5: true,
+      rate: 1,
+      volume: 0,
+      onend: () => setCurrentIndex((i) => (i + 1) % tracks.length),
+    });
+    howlRef.current = sound;
+    soundIdRef.current = null;
+
+    if (isPlaying && prev && prev.playing(prevId ?? undefined)) {
+      crossfadePrevRef.current = prev;
+      soundIdRef.current = sound.play();
+
+      const CROSSFADE_DURATION = 1.2;
+      const startTime = performance.now();
+      const prevStartVol = prev.volume();
+      const targetVol = volumeRef.current;
+
+      const tick = () => {
+        const t = (performance.now() - startTime) / 1000;
+        const p = Math.min(1, t / CROSSFADE_DURATION);
+
+        const inEased = Math.sin((p * Math.PI) / 2);
+        const outEased = Math.cos((p * Math.PI) / 2);
+
+        sound.volume(Math.max(0, Math.min(1, targetVol * inEased)));
+        prev.volume(Math.max(0, prevStartVol * outEased));
+
+        if (p >= 1) {
+          sound.volume(volumeRef.current);
+          prev.stop();
+          prev.unload();
+          crossfadePrevRef.current = null;
+          crossfadeRafRef.current = null;
+          return;
+        }
+        crossfadeRafRef.current = requestAnimationFrame(tick);
+      };
+      crossfadeRafRef.current = requestAnimationFrame(tick);
+    } else {
+      prev?.unload();
+      sound.volume(volumeRef.current);
+      if (isPlaying) {
+        soundIdRef.current = sound.play();
+      }
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [currentIndex, tracks]);
+
+  useEffect(() => {
+    if (rateLockRef.current) return;
+    howlRef.current?.rate(rate);
+  }, [rate]);
+
+  useEffect(() => {
+    if (rateLockRef.current) return;
+    howlRef.current?.volume(volume);
+  }, [volume]);
+
+  useEffect(() => {
+    const h = howlRef.current;
+    if (!h) return;
+
+    if (rafRef.current !== null) {
+      cancelAnimationFrame(rafRef.current);
+      rafRef.current = null;
+    }
+
+    const FADE_OUT_DURATION = 0.6;
+
+    if (isPlaying) {
+      rateLockRef.current = false;
+      const alreadyPlaying = h.playing(soundIdRef.current ?? undefined);
+      if (!alreadyPlaying) {
+        h.volume(volumeRef.current);
+        if (soundIdRef.current !== null) {
+          h.play(soundIdRef.current);
+        } else {
+          soundIdRef.current = h.play();
+        }
+      } else {
+        h.volume(volumeRef.current);
+      }
+    } else {
+      if (!h.playing(soundIdRef.current ?? undefined)) {
+        return;
+      }
+
+      rateLockRef.current = true;
+      const start = performance.now();
+      const startVol = h.volume();
+
+      const tick = () => {
+        if (!rateLockRef.current) return;
+        const t = (performance.now() - start) / 1000;
+        const p = Math.min(1, t / FADE_OUT_DURATION);
+
+        const v = startVol * Math.cos((p * Math.PI) / 2);
+        h.volume(Math.max(0, v));
+
+        if (p >= 1) {
+          h.volume(0);
+          h.pause();
+          h.volume(volumeRef.current);
+          rateLockRef.current = false;
+          rafRef.current = null;
+          return;
+        }
+        rafRef.current = requestAnimationFrame(tick);
+      };
+      rafRef.current = requestAnimationFrame(tick);
+    }
+
+    return () => {
+      if (rafRef.current !== null) {
+        cancelAnimationFrame(rafRef.current);
+        rafRef.current = null;
+      }
+    };
+  }, [isPlaying]);
+
+  const setIndex = useCallback((i: number) => {
+    setCurrentIndex(((i % tracks.length) + tracks.length) % tracks.length);
+    setIsPlaying(true);
+  }, []);
+
+  const next = useCallback(() => setIndex(currentIndex + 1), [currentIndex, setIndex]);
+  const prev = useCallback(() => setIndex(currentIndex - 1), [currentIndex, setIndex]);
+  const toggle = useCallback(() => setIsPlaying((p) => !p), []);
+  const setRate = useCallback((r: number) => {
+    setRateState(Math.max(0.25, Math.min(2.5, r)));
+  }, []);
+  const setVolume = useCallback((v: number) => {
+    setVolumeState(Math.max(0, Math.min(1, v)));
+  }, []);
+
+  const openCatalog = useCallback(() => setCatalogOpen(true), []);
+  const closeCatalog = useCallback(() => setCatalogOpen(false), []);
+  const toggleCatalog = useCallback(() => setCatalogOpen((o) => !o), []);
+
+  const value = useMemo<PlayerState>(
+    () => ({
+      currentIndex,
+      isPlaying,
+      rate,
+      volume,
+      current: tracks[currentIndex],
+      tracks,
+      catalogOpen,
+      howlRef,
+      rateLockRef,
+      setIndex,
+      next,
+      prev,
+      toggle,
+      setRate,
+      setVolume,
+      openCatalog,
+      closeCatalog,
+      toggleCatalog,
+    }),
+    [
+      currentIndex,
+      isPlaying,
+      rate,
+      volume,
+      tracks,
+      catalogOpen,
+      setIndex,
+      next,
+      prev,
+      toggle,
+      setRate,
+      setVolume,
+      openCatalog,
+      closeCatalog,
+      toggleCatalog,
+    ],
+  );
+
+  return (
+    <PlayerContext.Provider value={value}>{children}</PlayerContext.Provider>
+  );
+}
+
+export function usePlayer() {
+  const ctx = useContext(PlayerContext);
+  if (!ctx) throw new Error("usePlayer must be used inside PlayerProvider");
+  return ctx;
+}
