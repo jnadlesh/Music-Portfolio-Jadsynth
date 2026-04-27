@@ -7,23 +7,35 @@ import {
   type MotionValue,
 } from "motion/react";
 import { usePlayer } from "~/lib/player-context";
+import { useIsMobile } from "~/lib/use-media-query";
 import { TrackTimer } from "./TrackTimer";
 
 const BASE_RPM = 20;
 const FRICTION = 0.96;
+const SCRUB_SECONDS_PER_360 = 60 / BASE_RPM;
 
 export function Vinyl() {
-  const { setRate, current, toggle, isPlaying, rateLockRef } = usePlayer();
+  const {
+    setRate,
+    current,
+    toggle,
+    isPlaying,
+    rateLockRef,
+    howlRef,
+  } = usePlayer();
+  const isMobile = useIsMobile();
   const rotation = useMotionValue(0);
   const speed = useMotionValue(1);
   const dragRef = useRef<{
     active: boolean;
     lastAngle: number;
     lastTime: number;
+    wasPlaying: boolean;
   }>({
     active: false,
     lastAngle: 0,
     lastTime: 0,
+    wasPlaying: false,
   });
   const containerRef = useRef<HTMLDivElement>(null);
 
@@ -64,6 +76,7 @@ export function Vinyl() {
   }, [isPlaying, rotation, setRate, speed, rateLockRef]);
 
   useEffect(() => {
+    if (isMobile) return;
     const el = containerRef.current;
     if (!el) return;
 
@@ -76,13 +89,21 @@ export function Vinyl() {
 
     el.addEventListener("wheel", onWheel, { passive: false });
     return () => el.removeEventListener("wheel", onWheel);
-  }, [speed]);
+  }, [speed, isMobile]);
 
   const onPointerDown = (e: React.PointerEvent) => {
+    if (isMobile) return;
     const el = containerRef.current;
     if (!el) return;
     el.setPointerCapture(e.pointerId);
-    rateLockRef.current = false;
+    rateLockRef.current = true;
+
+    const h = howlRef.current;
+    const wasPlaying = !!h && h.playing();
+    if (h) {
+      h.rate(0.0001);
+    }
+
     const rect = el.getBoundingClientRect();
     const cx = rect.left + rect.width / 2;
     const cy = rect.top + rect.height / 2;
@@ -91,6 +112,7 @@ export function Vinyl() {
       active: true,
       lastAngle: angle,
       lastTime: performance.now(),
+      wasPlaying,
     };
   };
 
@@ -106,21 +128,38 @@ export function Vinyl() {
     if (delta > 180) delta -= 360;
     if (delta < -180) delta += 360;
 
-    const now = performance.now();
-    const dt = Math.max(1, now - dragRef.current.lastTime) / 1000;
-    const degPerSec = delta / dt;
-    const newSpeed = degPerSec / (BASE_RPM * 6);
-
-    speed.set(Math.max(-2.5, Math.min(2.5, newSpeed)));
     rotation.set(rotation.get() + delta);
 
+    const h = howlRef.current;
+    if (h) {
+      const seek = h.seek();
+      const currentSeek = typeof seek === "number" ? seek : 0;
+      const timeDelta = (delta / 360) * SCRUB_SECONDS_PER_360;
+      const duration = h.duration() || 0;
+      const newSeek = Math.max(
+        0,
+        Math.min(duration > 0 ? duration - 0.01 : 1e9, currentSeek + timeDelta),
+      );
+      h.seek(newSeek);
+    }
+
     dragRef.current.lastAngle = angle;
-    dragRef.current.lastTime = now;
+    dragRef.current.lastTime = performance.now();
   };
 
   const onPointerUp = (e: React.PointerEvent) => {
+    if (!dragRef.current.active) return;
     const el = containerRef.current;
     el?.releasePointerCapture(e.pointerId);
+
+    const h = howlRef.current;
+    if (h) {
+      h.rate(1);
+      setRate(1);
+      speed.set(dragRef.current.wasPlaying ? 1 : 0);
+    }
+
+    rateLockRef.current = false;
     dragRef.current.active = false;
   };
 
@@ -139,7 +178,9 @@ export function Vinyl() {
         onPointerCancel={onPointerUp}
         onDoubleClick={toggle}
         style={motionStyle}
-        className="relative aspect-square w-[min(80vmin,640px)] cursor-grab select-none rounded-full bg-black active:cursor-grabbing"
+        className={`relative aspect-square w-[min(80vmin,640px)] select-none rounded-full bg-black ${
+          isMobile ? "" : "cursor-grab active:cursor-grabbing"
+        }`}
       >
         <div className="absolute inset-0 rounded-full bg-gradient-to-br from-zinc-900 via-black to-zinc-950 shadow-[0_0_120px_rgba(0,0,0,0.8)]" />
         <div className="vinyl-grooves absolute inset-2 rounded-full" />
