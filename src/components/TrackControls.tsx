@@ -64,7 +64,9 @@ export function TrackControls() {
         <ScrubGlyph side="right" active={scrubDirection === "ffwd"} />
       </div>
 
-      <VolumeSlider volume={volume} setVolume={setVolume} />
+      <div className="hidden md:flex">
+        <VolumeSlider volume={volume} setVolume={setVolume} />
+      </div>
     </div>
   );
 }

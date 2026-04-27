@@ -159,6 +159,27 @@ function interpolateMood(
 }
 
 export function AtmosphericBackground() {
+  const isSmallViewport =
+    typeof window !== "undefined" &&
+    window.matchMedia("(max-width: 767px)").matches;
+
+  if (isSmallViewport) {
+    return (
+      <div
+        aria-hidden
+        className="pointer-events-none fixed inset-0 -z-10"
+        style={{
+          background:
+            "radial-gradient(ellipse at 30% 20%, #1f2a3a 0%, #0a0604 60%, #000 100%)",
+        }}
+      />
+    );
+  }
+
+  return <AtmosphericCanvas />;
+}
+
+function AtmosphericCanvas() {
   const { current, howlRef, currentIndex, isPlaying } = usePlayer();
   const { analyserRef, dataRef } = useAudioAnalyser(
     howlRef,

@@ -23,6 +23,12 @@ export function useAudioAnalyser(
 
   useEffect(() => {
     if (typeof window === "undefined") return;
+    // iOS Safari + createMediaElementSource has a well-known bug where it
+    // can silently produce no audio output. Plus the Web Audio chain (LUFS,
+    // limiter, analyser) is expensive on mobile. Skip the entire chain on
+    // small viewports — audio plays directly through HTMLAudioElement.
+    if (window.matchMedia("(max-width: 767px)").matches) return;
+
     let cancelled = false;
     let attempts = 0;
 
