@@ -267,6 +267,64 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
   const next = useCallback(() => setIndex(currentIndex + 1), [currentIndex, setIndex]);
   const prev = useCallback(() => setIndex(currentIndex - 1), [currentIndex, setIndex]);
   const toggle = useCallback(() => setIsPlaying((p) => !p), []);
+
+  const current = tracks[currentIndex];
+
+  useEffect(() => {
+    if (typeof navigator === "undefined" || !("mediaSession" in navigator)) {
+      return;
+    }
+    const ms = navigator.mediaSession;
+
+    const artwork: MediaImage[] = current.artworkSrc
+      ? [
+          {
+            src: new URL(current.artworkSrc, window.location.origin).href,
+            sizes: "1080x1080",
+            type: "image/jpeg",
+          },
+        ]
+      : [];
+
+    ms.metadata = new MediaMetadata({
+      title: current.title,
+      artist: current.album || "JADSYNTH",
+      album: "JADSYNTH",
+      artwork,
+    });
+
+    const onPlay = () => setIsPlaying(true);
+    const onPause = () => setIsPlaying(false);
+    const onNext = () => next();
+    const onPrev = () => prev();
+
+    try {
+      ms.setActionHandler("play", onPlay);
+      ms.setActionHandler("pause", onPause);
+      ms.setActionHandler("nexttrack", onNext);
+      ms.setActionHandler("previoustrack", onPrev);
+    } catch {
+      /* unsupported action handler — ignore */
+    }
+
+    return () => {
+      try {
+        ms.setActionHandler("play", null);
+        ms.setActionHandler("pause", null);
+        ms.setActionHandler("nexttrack", null);
+        ms.setActionHandler("previoustrack", null);
+      } catch {
+        /* ignore */
+      }
+    };
+  }, [current, next, prev]);
+
+  useEffect(() => {
+    if (typeof navigator === "undefined" || !("mediaSession" in navigator)) {
+      return;
+    }
+    navigator.mediaSession.playbackState = isPlaying ? "playing" : "paused";
+  }, [isPlaying]);
   const setRate = useCallback((r: number) => {
     setRateState(Math.max(0.25, Math.min(2.5, r)));
   }, []);
